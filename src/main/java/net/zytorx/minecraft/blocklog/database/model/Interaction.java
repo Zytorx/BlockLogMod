@@ -7,7 +7,7 @@ public interface Interaction extends Serializable {
 
     long getTime();
 
-    UUID getPlayer();
+    UUID getEntity();
 
     default MapKey asKey() {
         return MapKey.of(this);

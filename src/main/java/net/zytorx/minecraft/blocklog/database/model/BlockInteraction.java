@@ -4,10 +4,9 @@ import java.util.UUID;
 
 public class BlockInteraction implements Interaction {
     private long time;
-    private UUID player;
+    private UUID entity;
     private String level;
-    private String blockOld;
-    private String blockNew;
+    private OldNewTuple block;
     private int x;
     private int y;
     private int z;
@@ -15,23 +14,14 @@ public class BlockInteraction implements Interaction {
     public BlockInteraction() {
     }
 
-    public BlockInteraction(long time, UUID player, String level, String blockOld, String blockNew, int x, int y, int z) {
+    public BlockInteraction(long time, UUID entity, String level, String blockOld, String blockNew, int x, int y, int z) {
         this.time = time;
-        this.player = player;
+        this.entity = entity;
         this.level = level;
-        this.blockOld = blockOld;
-        this.blockNew = blockNew;
+        this.block = new OldNewTuple(blockOld, blockNew);
         this.x = x;
         this.y = y;
         this.z = z;
-    }
-
-    public String getBlockNew() {
-        return blockNew;
-    }
-
-    public void setBlockNew(String blockNew) {
-        this.blockNew = blockNew;
     }
 
     public long getTime() {
@@ -42,20 +32,12 @@ public class BlockInteraction implements Interaction {
         this.time = time;
     }
 
-    public UUID getPlayer() {
-        return player;
+    public UUID getEntity() {
+        return entity;
     }
 
-    public void setPlayer(UUID player) {
-        this.player = player;
-    }
-
-    public String getBlockOld() {
-        return blockOld;
-    }
-
-    public void setBlockOld(String blockOld) {
-        this.blockOld = blockOld;
+    public void setEntity(UUID entity) {
+        this.entity = entity;
     }
 
     public int getX() {
@@ -88,6 +70,14 @@ public class BlockInteraction implements Interaction {
 
     public void setLevel(String level) {
         this.level = level;
+    }
+
+    public OldNewTuple getBlock() {
+        return block;
+    }
+
+    public void setBlock(OldNewTuple block) {
+        this.block = block;
     }
 }
 

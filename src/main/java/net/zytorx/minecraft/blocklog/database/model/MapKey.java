@@ -26,6 +26,6 @@ public class MapKey implements Serializable {
     }
 
     public static MapKey of(Interaction interaction) {
-        return new MapKey(interaction.getTime(), interaction.getPlayer());
+        return new MapKey(interaction.getTime(), interaction.getEntity());
     }
 }

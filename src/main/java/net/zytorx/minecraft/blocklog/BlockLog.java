@@ -1,20 +1,31 @@
 package net.zytorx.minecraft.blocklog;
 
+import net.minecraftforge.event.server.ServerStoppedEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.zytorx.minecraft.blocklog.database.LocalFileSystemDatabase;
+import net.zytorx.minecraft.blocklog.database.Cache;
+import net.zytorx.minecraft.blocklog.database.LocalFileSystemCache;
 import net.zytorx.minecraft.blocklog.logging.Logger;
 
 import java.nio.file.Path;
 
-// The value here should match an entry in the META-INF/mods.toml file
 @Mod(BlockLog.MOD_ID)
+@Mod.EventBusSubscriber(modid = BlockLog.MOD_ID)
 public class BlockLog {
-    // Directly reference a slf4j logger
-
     public static final String MOD_ID = "blocklog";
+    private static Cache cache;
 
     public BlockLog() {
-        Logger.register(new LocalFileSystemDatabase(Path.of("/home/zytorx/testing/local")));
+        if (cache != null) {
+            throw new RuntimeException("BlockLog can only be created once");
+        }
+        cache = new LocalFileSystemCache(Path.of("/home/zytorx/testing/local"));
+        Logger.register(cache);
 
+    }
+
+    @SubscribeEvent
+    public static void onShutdown(ServerStoppedEvent event) {
+        cache.save();
     }
 }
