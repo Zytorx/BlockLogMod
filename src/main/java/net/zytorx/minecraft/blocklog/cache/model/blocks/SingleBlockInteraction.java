@@ -1,8 +1,11 @@
-package net.zytorx.minecraft.blocklog.database.model;
+package net.zytorx.minecraft.blocklog.cache.model.blocks;
+
+import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
+import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
 
 import java.util.UUID;
 
-public class BlockInteraction implements Interaction {
+public class SingleBlockInteraction implements Interaction {
     private long time;
     private UUID entity;
     private String level;
@@ -11,10 +14,10 @@ public class BlockInteraction implements Interaction {
     private int y;
     private int z;
 
-    public BlockInteraction() {
+    public SingleBlockInteraction() {
     }
 
-    public BlockInteraction(long time, UUID entity, String level, String blockOld, String blockNew, int x, int y, int z) {
+    public SingleBlockInteraction(long time, UUID entity, String level, String blockOld, String blockNew, int x, int y, int z) {
         this.time = time;
         this.entity = entity;
         this.level = level;

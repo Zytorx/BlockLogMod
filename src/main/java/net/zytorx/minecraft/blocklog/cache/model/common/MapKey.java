@@ -1,4 +1,4 @@
-package net.zytorx.minecraft.blocklog.database.model;
+package net.zytorx.minecraft.blocklog.cache.model.common;
 
 import java.io.Serializable;
 import java.util.UUID;

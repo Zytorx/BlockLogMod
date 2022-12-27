@@ -11,11 +11,11 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.zytorx.minecraft.blocklog.BlockLog;
-import net.zytorx.minecraft.blocklog.database.Cache;
-import net.zytorx.minecraft.blocklog.database.model.BlockInteraction;
-import net.zytorx.minecraft.blocklog.database.model.ExplosionInteraction;
-import net.zytorx.minecraft.blocklog.database.model.Interaction;
-import net.zytorx.minecraft.blocklog.database.model.OldNewTuple;
+import net.zytorx.minecraft.blocklog.cache.Cache;
+import net.zytorx.minecraft.blocklog.cache.model.blocks.MultiBlockInteraction;
+import net.zytorx.minecraft.blocklog.cache.model.blocks.SingleBlockInteraction;
+import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
+import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
 
 @Mod.EventBusSubscriber(modid = BlockLog.MOD_ID)
 public class Logger {
@@ -75,14 +75,17 @@ public class Logger {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void explosion(ExplosionEvent event) {
         var explosion = event.getExplosion();
+        var toBlow = explosion.getToBlow();
+        if (toBlow.isEmpty()) {
+            return;
+        }
         var time = System.currentTimeMillis();
         var entity = explosion.getSourceMob().getUUID();
         var level = event.getWorld();
-        var interaction = new ExplosionInteraction(time, entity, level.dimension().toString());
-        for (var pos : explosion.getToBlow()) {
+        var interaction = new MultiBlockInteraction(time, entity, level.dimension().toString());
+        for (var pos : toBlow) {
             interaction.addBlock(pos, writeBlockState(level.getBlockState(pos)), null);
         }
-
         log(interaction);
     }
 
@@ -101,11 +104,11 @@ public class Logger {
         }
     }
 
-    private static BlockInteraction defaultBlockInteraction(BlockEvent event) {
+    private static SingleBlockInteraction defaultBlockInteraction(BlockEvent event) {
         var time = System.currentTimeMillis();
         var level = ((Level) event.getWorld()).dimension().toString();
         var pos = event.getPos();
-        return new BlockInteraction(time, null, level, null, null, pos.getX(), pos.getY(), pos.getZ());
+        return new SingleBlockInteraction(time, null, level, null, null, pos.getX(), pos.getY(), pos.getZ());
     }
 
     private static void log(Interaction interaction) {

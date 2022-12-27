@@ -1,6 +1,6 @@
-package net.zytorx.minecraft.blocklog.database;
+package net.zytorx.minecraft.blocklog.cache;
 
-import net.zytorx.minecraft.blocklog.database.model.Interaction;
+import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 
 public interface Cache {
 

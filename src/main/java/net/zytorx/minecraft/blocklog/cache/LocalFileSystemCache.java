@@ -1,10 +1,10 @@
-package net.zytorx.minecraft.blocklog.database;
+package net.zytorx.minecraft.blocklog.cache;
 
 
-import net.zytorx.minecraft.blocklog.database.model.BlockInteraction;
-import net.zytorx.minecraft.blocklog.database.model.ExplosionInteraction;
-import net.zytorx.minecraft.blocklog.database.model.Interaction;
-import net.zytorx.minecraft.blocklog.database.model.MapKey;
+import net.zytorx.minecraft.blocklog.cache.model.blocks.MultiBlockInteraction;
+import net.zytorx.minecraft.blocklog.cache.model.blocks.SingleBlockInteraction;
+import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
+import net.zytorx.minecraft.blocklog.cache.model.common.MapKey;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -14,29 +14,29 @@ import java.util.TimerTask;
 
 public class LocalFileSystemCache implements Cache {
 
-    private final AutoFileReadMap<BlockInteraction> blockInteractions;
-    private final AutoFileReadMap<ExplosionInteraction> explosionInteractions;
+    private final AutoFileReadMap<SingleBlockInteraction> blockInteractions;
+    private final AutoFileReadMap<MultiBlockInteraction> explosionInteractions;
     private final Path path;
     private final Timer timer = new Timer(true);
     private boolean isDirty = false;
 
     public LocalFileSystemCache(Path path) {
         this.path = path;
-        blockInteractions = new AutoFileReadMap<BlockInteraction>().load("_bl_blocks");
-        explosionInteractions = new AutoFileReadMap<ExplosionInteraction>().load("_bl_explosion");
+        blockInteractions = new AutoFileReadMap<SingleBlockInteraction>().load("_bl_blocks");
+        explosionInteractions = new AutoFileReadMap<MultiBlockInteraction>().load("_bl_explosion");
     }
 
     public void addInteraction(Interaction interaction) {
         if (interaction == null) {
             return;
         }
-        if (interaction instanceof BlockInteraction block) {
+        if (interaction instanceof SingleBlockInteraction block) {
             synchronized (blockInteractions) {
                 blockInteractions.put(block);
             }
         }
 
-        if (interaction instanceof ExplosionInteraction explosion) {
+        if (interaction instanceof MultiBlockInteraction explosion) {
             synchronized (explosionInteractions) {
                 explosionInteractions.put(explosion);
             }
@@ -89,13 +89,15 @@ public class LocalFileSystemCache implements Cache {
         public AutoFileReadMap<VALUE> load(String suffix) {
             path = Path.of(LocalFileSystemCache.this.path.toAbsolutePath() + suffix);
 
-            AutoFileReadMap<VALUE> temp;
+            AutoFileReadMap<VALUE> temp = null;
             try {
                 var reader = new ObjectInputStream(new BufferedInputStream(new FileInputStream(path.toFile())));
                 temp = new AutoFileReadMap<>((HashMap<MapKey, VALUE>) reader.readObject(), this.path);
                 reader.close();
             } catch (Exception e) {
-                temp = this;
+                if (temp == null) {
+                    temp = this;
+                }
             }
             return temp;
         }
@@ -114,7 +116,6 @@ public class LocalFileSystemCache implements Cache {
 
                 isDirty = false;
             } catch (Exception ignored) {
-                System.out.println("FAILURE");
             }
         }
     }

@@ -1,6 +1,8 @@
-package net.zytorx.minecraft.blocklog.database.model;
+package net.zytorx.minecraft.blocklog.cache.model.blocks;
 
 import net.minecraft.core.BlockPos;
+import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
+import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -8,16 +10,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-public class ExplosionInteraction implements Interaction {
+public class MultiBlockInteraction implements Interaction {
     private final HashMap<CustomBlockPos, OldNewTuple> interactions = new HashMap<>();
     private long time;
     private UUID entity;
     private String level;
 
-    public ExplosionInteraction() {
+    public MultiBlockInteraction() {
     }
 
-    public ExplosionInteraction(long time, UUID entity, String level) {
+    public MultiBlockInteraction(long time, UUID entity, String level) {
         this.time = time;
         this.entity = entity;
         this.level = level;

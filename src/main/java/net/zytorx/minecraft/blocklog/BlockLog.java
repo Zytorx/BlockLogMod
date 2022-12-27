@@ -3,8 +3,8 @@ package net.zytorx.minecraft.blocklog;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.zytorx.minecraft.blocklog.database.Cache;
-import net.zytorx.minecraft.blocklog.database.LocalFileSystemCache;
+import net.zytorx.minecraft.blocklog.cache.Cache;
+import net.zytorx.minecraft.blocklog.cache.LocalFileSystemCache;
 import net.zytorx.minecraft.blocklog.logging.Logger;
 
 import java.nio.file.Path;
