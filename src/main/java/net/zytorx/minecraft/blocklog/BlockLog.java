@@ -15,5 +15,6 @@ public class BlockLog {
 
     public BlockLog() {
         Logger.register(new LocalFileSystemDatabase(Path.of("/home/zytorx/testing/local")));
+
     }
 }

@@ -21,7 +21,7 @@ public class LocalFileSystemDatabase implements Database {
         try {
             var reader = new ObjectInputStream(new BufferedInputStream(new FileInputStream(path.toFile())));
             temp = (HashMap<MapKey, BlockInteraction>) reader.readObject();
-
+            reader.close();
         } catch (IOException | ClassNotFoundException e) {
             temp = new HashMap<>();
         }
@@ -39,12 +39,15 @@ public class LocalFileSystemDatabase implements Database {
     }
 
     private void save() {
+        var file = path.toFile();
+        file.getParentFile().mkdirs();
         try {
-            var writer = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(path.toFile())));
+            var writer = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
             writer.reset();
             writer.writeObject(blockInteractions);
+            writer.close();
         } catch (Exception ignored) {
-
+            System.out.println("FAILURE");
         }
     }
 }

@@ -6,11 +6,11 @@ import net.minecraftforge.fml.common.Mod;
 import net.zytorx.minecraft.blocklog.BlockLog;
 import net.zytorx.minecraft.blocklog.logging.Logger;
 
-@Mod.EventBusSubscriber(modid = BlockLog.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@Mod.EventBusSubscriber(modid = BlockLog.MOD_ID)
 public class WorldInteraction {
 
     @SubscribeEvent
-    public void blockBreakEvent(BlockEvent.BreakEvent event) {
+    public static void blockBreakEvent(BlockEvent.BreakEvent event) {
         if (event.isCanceled()) {
             return;
         }
@@ -18,7 +18,7 @@ public class WorldInteraction {
     }
 
     @SubscribeEvent
-    public void blockPlaceEvent(BlockEvent.EntityPlaceEvent event) {
+    public static void blockPlaceEvent(BlockEvent.EntityPlaceEvent event) {
         if (event.isCanceled()) {
             return;
         }
