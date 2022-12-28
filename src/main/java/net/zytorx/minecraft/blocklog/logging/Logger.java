@@ -1,10 +1,7 @@
 package net.zytorx.minecraft.blocklog.logging;
 
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.nbt.TagParser;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.event.world.ExplosionEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -12,10 +9,13 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.zytorx.minecraft.blocklog.BlockLog;
 import net.zytorx.minecraft.blocklog.cache.Cache;
+import net.zytorx.minecraft.blocklog.cache.model.InteractionUtils;
 import net.zytorx.minecraft.blocklog.cache.model.blocks.MultiBlockInteraction;
 import net.zytorx.minecraft.blocklog.cache.model.blocks.SingleBlockInteraction;
 import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
+
+import java.util.stream.Stream;
 
 @Mod.EventBusSubscriber(modid = BlockLog.MOD_ID)
 public class Logger {
@@ -34,41 +34,48 @@ public class Logger {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void breakBlock(BlockEvent.BreakEvent event) {
+        if (event.getState().isAir()) {
+            return;
+        }
+
         var interaction = defaultBlockInteraction(event);
         interaction.setEntity(event.getPlayer().getUUID());
-        interaction.setBlock(new OldNewTuple(writeBlockState(event.getState()), null));
+        interaction.setBlock(new OldNewTuple(InteractionUtils.writeBlockState(event.getState()), null));
         log(interaction);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void placeBlock(BlockEvent.EntityPlaceEvent event) {
+        if (event.getPlacedAgainst().equals(event.getPlacedBlock())) {
+            return;
+        }
         var interaction = defaultBlockInteraction(event);
         interaction.setEntity(event.getEntity().getUUID());
-        interaction.setBlock(new OldNewTuple(writeBlockState(event.getPlacedAgainst()), writeBlockState(event.getPlacedBlock())));
+        interaction.setBlock(new OldNewTuple(InteractionUtils.writeBlockState(event.getPlacedAgainst()), InteractionUtils.writeBlockState(event.getPlacedBlock())));
         log(interaction);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void placeMultiBlock(BlockEvent.EntityMultiPlaceEvent event) {
-        var interaction = defaultBlockInteraction(event);
-        interaction.setEntity(event.getEntity().getUUID());
-        interaction.setBlock(new OldNewTuple(writeBlockState(event.getPlacedAgainst()), writeBlockState(event.getPlacedBlock())));
-        log(interaction);
+        placeBlock(event);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void trampleFarmland(BlockEvent.FarmlandTrampleEvent event) {
         var interaction = defaultBlockInteraction(event);
         interaction.setEntity(event.getEntity().getUUID());
-        interaction.setBlock(new OldNewTuple(writeBlockState(Blocks.FARMLAND.defaultBlockState()), writeBlockState(Blocks.DIRT.defaultBlockState())));
+        interaction.setBlock(new OldNewTuple(InteractionUtils.writeBlockState(Blocks.FARMLAND.defaultBlockState()), InteractionUtils.writeBlockState(Blocks.DIRT.defaultBlockState())));
         log(interaction);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void toolModification(BlockEvent.BlockToolModificationEvent event) {
+        if (event.getState().equals(event.getFinalState())) {
+            return;
+        }
         var interaction = defaultBlockInteraction(event);
         interaction.setEntity(event.getPlayer().getUUID());
-        interaction.setBlock(new OldNewTuple(writeBlockState(event.getState()), writeBlockState(event.getFinalState())));
+        interaction.setBlock(new OldNewTuple(InteractionUtils.writeBlockState(event.getState()), InteractionUtils.writeBlockState(event.getFinalState())));
         log(interaction);
     }
 
@@ -84,24 +91,13 @@ public class Logger {
         var level = event.getWorld();
         var interaction = new MultiBlockInteraction(time, entity, level.dimension().toString());
         for (var pos : toBlow) {
-            interaction.addBlock(pos, writeBlockState(level.getBlockState(pos)), null);
+            interaction.addBlock(pos, InteractionUtils.writeBlockState(level.getBlockState(pos)), null);
         }
         log(interaction);
     }
 
-    private static String writeBlockState(BlockState state) {
-        if (state == null || state.isAir()) {
-            return null;
-        }
-        return NbtUtils.writeBlockState(state).toString();
-    }
-
-    private static BlockState readBlockState(String state) {
-        try {
-            return NbtUtils.readBlockState(TagParser.parseTag(state));
-        } catch (Exception e) {
-            return Blocks.AIR.defaultBlockState();
-        }
+    public static Stream<Interaction> getAllInteractions() {
+        return cache.getInteractions();
     }
 
     private static SingleBlockInteraction defaultBlockInteraction(BlockEvent event) {

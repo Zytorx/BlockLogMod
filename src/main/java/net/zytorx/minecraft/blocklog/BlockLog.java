@@ -1,10 +1,12 @@
 package net.zytorx.minecraft.blocklog;
 
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.zytorx.minecraft.blocklog.cache.Cache;
 import net.zytorx.minecraft.blocklog.cache.LocalFileSystemCache;
+import net.zytorx.minecraft.blocklog.commands.CommandRegistrar;
 import net.zytorx.minecraft.blocklog.logging.Logger;
 
 import java.nio.file.Path;
@@ -22,6 +24,9 @@ public class BlockLog {
         cache = new LocalFileSystemCache(Path.of("/home/zytorx/testing/local"));
         Logger.register(cache);
 
+        MinecraftForge.EVENT_BUS.addListener(CommandRegistrar::register);
+
+        //ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,);
     }
 
     @SubscribeEvent

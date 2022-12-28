@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Stream;
 
 public class LocalFileSystemCache implements Cache {
 
@@ -42,6 +43,11 @@ public class LocalFileSystemCache implements Cache {
             }
         }
         markDirty();
+    }
+
+    @Override
+    public Stream<Interaction> getInteractions() {
+        return Stream.concat(explosionInteractions.values().stream(), blockInteractions.values().stream());
     }
 
     public void markDirty() {
