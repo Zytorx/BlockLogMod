@@ -21,8 +21,6 @@ public class CommandsCache {
             var toAdd = new ArrayList<String>();
             Logger.getAllInteractions()
                     .filter(interaction -> filter == null || interaction.getEntity().equals(filter.getUUID()))
-                    //TODO remove
-                    .filter(interaction -> interaction instanceof SingleBlockInteraction)
                     .sorted(CommandsCache::compare).forEach(interaction -> interactionToString(interaction, toAdd));
             var pageMap = new HashMap<Integer, List<String>>();
             var pageLines = 10;
