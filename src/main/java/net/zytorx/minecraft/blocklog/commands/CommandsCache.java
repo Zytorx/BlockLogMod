@@ -54,15 +54,17 @@ public class CommandsCache {
     private static String convert(String template, OldNewTuple tuple, int x, int y, int z) {
         var oldState = InteractionUtils.readBlockState(tuple.getOldState());
         var newState = InteractionUtils.readBlockState(tuple.getNewState());
-        if (newState == null) {
+        if (newState.isAir()) {
             template = template.replace("{action}", "broke {old}");
-        } else if (oldState == null) {
+        } else if (oldState.isAir()) {
             template = template.replace("{action}", "placed {new}");
         } else {
             template = template.replace("{action}", "replaced {old} with {new}");
         }
-        return template.replace("{old}", oldState.getBlock().getName().toString())
-                .replace("{new}", newState.getBlock().getName().toString())
+        var oldItem = oldState.getBlock().asItem();
+        var newItem = newState.getBlock().asItem();
+        return template.replace("{old}", oldItem.getName(oldItem.getDefaultInstance()).getString())
+                .replace("{new}", newItem.getName(newItem.getDefaultInstance()).getString())
                 .replace("{x}", x + "")
                 .replace("{y}", y + "")
                 .replace("{z}", z + "");

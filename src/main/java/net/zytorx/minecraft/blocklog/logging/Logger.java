@@ -46,7 +46,7 @@ public class Logger {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void placeBlock(BlockEvent.EntityPlaceEvent event) {
-        if (event.getPlacedAgainst().equals(event.getPlacedBlock())) {
+        if (event.getPlacedAgainst().equals(event.getPlacedBlock()) || event.getPlacedBlock().isAir()) {
             return;
         }
         var interaction = defaultBlockInteraction(event);

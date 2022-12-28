@@ -50,6 +50,9 @@ public class MultiBlockInteraction implements Interaction {
     }
 
     public void addBlock(BlockPos pos, String oldState, String newState) {
+        if (oldState == null && newState == null) {
+            return;
+        }
         interactions.put(CustomBlockPos.fromBlockPos(pos), new OldNewTuple(oldState, newState));
     }
 
