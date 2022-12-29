@@ -6,6 +6,7 @@ import net.zytorx.minecraft.blocklog.cache.model.InteractionUtils;
 import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
 import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
+import net.zytorx.minecraft.blocklog.commands.filter.Filter;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -15,15 +16,14 @@ import java.util.stream.Stream;
 public class CommandsCache {
 
     private static final SimpleDateFormat format = new SimpleDateFormat("dd.MM.yy-hh:mm:ss");
-    private static HashMap<String, Map<Integer, List<String>>> blockLogCache = new HashMap<>();
-    private static HashMap<String, Integer> blockLogCounter = new HashMap<>();
+    private static HashMap<Filter, Map<Integer, List<String>>> blockLogCache = new HashMap<>();
+    private static HashMap<Filter, Integer> blockLogCounter = new HashMap<>();
 
-    public static List<String> loadBlockLogCache(String filter, int page) {
-        var loadedFilter = loadName(null, filter);
-        if (!blockLogCache.containsKey(loadedFilter)) {
+    public static List<String> loadBlockLogCache(Filter filter, int page) {
+        if (!blockLogCache.containsKey(filter)) {
             var toAdd = new ArrayList<String>();
             var interactions = BlockLog.CACHE != null ? BlockLog.CACHE.getInteractions() : Stream.<Interaction>empty();
-            var filtered = interactions.filter(interaction -> loadedFilter == null || interaction.getEntityID().toString().equals(loadedFilter) || interaction.getEntityName().equals(loadedFilter));
+            var filtered = filter.filter(interactions);
             var sorted = filtered.sorted(CommandsCache::compare);
             sorted.forEach(interaction -> interactionToString(interaction, toAdd));
             var pageMap = new HashMap<Integer, List<String>>();
@@ -34,10 +34,10 @@ public class CommandsCache {
             if (pageMap.isEmpty()) {
                 return List.of("No entries found");
             }
-            blockLogCache.put(loadedFilter, pageMap);
-            blockLogCounter.put(loadedFilter, 0);
+            blockLogCache.put(filter, pageMap);
+            blockLogCounter.put(filter, 0);
         }
-        var paged = blockLogCache.get(loadedFilter);
+        var paged = blockLogCache.get(filter);
 
         return paged.get(paged.containsKey(page) ? page : 0);
     }
@@ -90,7 +90,7 @@ public class CommandsCache {
     }
 
     public static void deleteOverhead() {
-        var toRemove = new ArrayList<String>();
+        var toRemove = new ArrayList<Filter>();
         for (var key : blockLogCounter.keySet()) {
             var isOverhead = new AtomicBoolean(false);
             blockLogCounter.computeIfPresent(key, (u, i) -> {

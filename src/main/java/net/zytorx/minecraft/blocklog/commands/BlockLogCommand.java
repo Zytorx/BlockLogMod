@@ -11,6 +11,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.zytorx.minecraft.blocklog.BlockLog;
 import net.zytorx.minecraft.blocklog.cache.model.InteractionUtils;
 import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
+import net.zytorx.minecraft.blocklog.commands.filter.Filter;
+import net.zytorx.minecraft.blocklog.commands.filter.FilterArgumentType;
 
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -24,7 +26,7 @@ public class BlockLogCommand {
                 .requires(r -> r.hasPermission(4) && r.getEntity() instanceof ServerPlayer)
                 .then(literal("list").executes(BlockLogCommand::list)
                         .then(argument("page", IntegerArgumentType.integer(0)).executes(BlockLogCommand::list))
-                        .then(argument("entity", StringArgumentType.word()).executes(BlockLogCommand::list)
+                        .then(argument("filter", new FilterArgumentType()).executes(BlockLogCommand::list)
                                 .then(argument("page", IntegerArgumentType.integer(0)).executes(BlockLogCommand::list))))
                 .then(literal("reload").executes(context -> {
                     CommandsCache.clearCache();
@@ -34,13 +36,12 @@ public class BlockLogCommand {
                 .then(literal("revert").then(argument("id", StringArgumentType.word()).executes(BlockLogCommand::revert))));
     }
 
-
     private static int list(CommandContext<CommandSourceStack> context) {
-        var entity = getEntityOrDefault(context);
+        var filter = getFilterOrDefault(context);
         var page = getIntOrDefault(context, "page");
         var source = context.getSource();
 
-        var log = CommandsCache.loadBlockLogCache(entity, page);
+        var log = CommandsCache.loadBlockLogCache(filter, page);
         for (var text : log) {
             source.sendSuccess(new TextComponent(text), false);
         }
@@ -82,10 +83,10 @@ public class BlockLogCommand {
         return 0;
     }
 
-    private static String getEntityOrDefault(CommandContext<CommandSourceStack> context) {
+    private static Filter getFilterOrDefault(CommandContext<CommandSourceStack> context) {
         try {
-            return StringArgumentType.getString(context, "entity");
-        } catch (Exception e2) {
+            return FilterArgumentType.getFilter(context, "filter");
+        } catch (Exception ignored) {
             return null;
         }
     }
