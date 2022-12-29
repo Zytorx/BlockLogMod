@@ -3,6 +3,7 @@ package net.zytorx.minecraft.blocklog.cache;
 
 import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
 import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
+import net.zytorx.minecraft.blocklog.config.BlockLogServerConfig;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -20,7 +21,7 @@ public class LocalFileSystemCache implements Cache {
 
     public LocalFileSystemCache(Path path) {
         this.path = path;
-        blockInteractions = new AutoFileReadMap<BlockInteraction>().load(path, "_bl_blocks");
+        blockInteractions = new AutoFileReadMap<BlockInteraction>().load(path, BlockLogServerConfig.BLOCK_SUFFIX.get());
     }
 
     public void addInteraction(Interaction interaction) {
