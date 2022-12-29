@@ -1,53 +1,52 @@
 package net.zytorx.minecraft.blocklog.commands;
 
-import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.UsernameCache;
 import net.zytorx.minecraft.blocklog.cache.model.InteractionUtils;
-import net.zytorx.minecraft.blocklog.cache.model.blocks.MultiBlockInteraction;
-import net.zytorx.minecraft.blocklog.cache.model.blocks.SingleBlockInteraction;
+import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
 import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
 import net.zytorx.minecraft.blocklog.logging.Logger;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CommandsCache {
-    private static final HashMap<UUID, Map<Integer, List<String>>> blockLogCache = new HashMap<>();
-    private static final HashMap<UUID, Integer> blockLogCounter = new HashMap<>();
 
-    public static List<String> loadBlockLogCache(UUID executer, Player filter, int page) {
-        if (!blockLogCache.containsKey(executer)) {
+    private static final SimpleDateFormat format = new SimpleDateFormat("dd.MM.yy-hh:mm:ss");
+    private static HashMap<String, Map<Integer, List<String>>> blockLogCache = new HashMap<>();
+    private static HashMap<String, Integer> blockLogCounter = new HashMap<>();
+
+    public static List<String> loadBlockLogCache(String filter, int page) {
+        var loadedFilter = loadName(null, filter);
+        if (!blockLogCache.containsKey(loadedFilter)) {
             var toAdd = new ArrayList<String>();
-            Logger.getAllInteractions()
-                    .filter(interaction -> filter == null || interaction.getEntity().equals(filter.getUUID()))
-                    .sorted(CommandsCache::compare).forEach(interaction -> interactionToString(interaction, toAdd));
+            var interactions = Logger.getAllInteractions();
+            var filtered = interactions.filter(interaction -> loadedFilter == null || interaction.getEntityID().toString().equals(loadedFilter) || interaction.getEntityName().equals(loadedFilter));
+            var sorted = filtered.sorted(CommandsCache::compare);
+            sorted.forEach(interaction -> interactionToString(interaction, toAdd));
             var pageMap = new HashMap<Integer, List<String>>();
             var pageLines = 10;
             for (var i = 0; i < toAdd.size(); i += pageLines) {
                 pageMap.put(i / pageLines, toAdd.subList(i, Math.min(i + pageLines, toAdd.size())));
             }
-            blockLogCache.put(executer, pageMap);
-
+            if (pageMap.isEmpty()) {
+                return List.of("No entries found");
+            }
+            blockLogCache.put(loadedFilter, pageMap);
+            blockLogCounter.put(loadedFilter, 0);
         }
-        var paged = blockLogCache.get(executer);
+        var paged = blockLogCache.get(loadedFilter);
 
         return paged.get(paged.containsKey(page) ? page : 0);
     }
 
     private static void interactionToString(Interaction toConvert, List<String> strings) {
-        var time = new Date(toConvert.getTime()).toString();
-        var entity = UsernameCache.containsUUID(toConvert.getEntity()) ? UsernameCache.getLastKnownUsername(toConvert.getEntity()) : toConvert.getEntity().toString();
-        var template = time + ": " + entity + " {action} at x: {x} y: {y} z: {z}";
-        if (toConvert instanceof SingleBlockInteraction singleBlock) {
+        var time = format.format(new Date(toConvert.getTime()));
+        var entity = loadName(toConvert.getEntityID(), toConvert.getEntityName());
+        var template = time + ": " + entity + " {action} at ({x}, {y}, {z})";
+        if (toConvert instanceof BlockInteraction singleBlock) {
             strings.add(convert(template, singleBlock.getBlock(), singleBlock.getX(), singleBlock.getY(), singleBlock.getZ()));
-        }
-
-        if (toConvert instanceof MultiBlockInteraction multiBlock) {
-            var interactions = multiBlock.getInteractions();
-            for (var pos : interactions.keySet()) {
-                strings.add(convert(template, interactions.get(pos), pos.getX(), pos.getY(), pos.getZ()));
-            }
         }
     }
 
@@ -70,19 +69,31 @@ public class CommandsCache {
                 .replace("{z}", z + "");
     }
 
+    private static String loadName(UUID id, String name) {
+        if (id == null || !UsernameCache.containsUUID(id)) {
+            return name;
+        }
+        return UsernameCache.getLastKnownUsername(id);
+    }
+
     private static int compare(Interaction i1, Interaction i2) {
         var temp = i1.getTime() - i2.getTime();
-        if (temp > 0) {
+        if (temp < 0) {
             return 1;
         }
-        if (temp < 0) {
+        if (temp > 0) {
             return -1;
         }
         return 0;
     }
 
+    static void clearCache() {
+        blockLogCounter = new HashMap<>();
+        blockLogCache = new HashMap<>();
+    }
+
     public static void deleteOverhead() {
-        var toRemove = new ArrayList<UUID>();
+        var toRemove = new ArrayList<String>();
         for (var key : blockLogCounter.keySet()) {
             var isOverhead = new AtomicBoolean(false);
             blockLogCounter.computeIfPresent(key, (u, i) -> {

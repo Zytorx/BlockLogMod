@@ -1,25 +1,28 @@
 package net.zytorx.minecraft.blocklog.cache.model.blocks;
 
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
 
 import java.util.UUID;
 
-public class SingleBlockInteraction implements Interaction {
+public class BlockInteraction implements Interaction {
     private long time;
-    private UUID entity;
+    private UUID entityId;
+    private String entityName;
     private String level;
     private OldNewTuple block;
     private int x;
     private int y;
     private int z;
 
-    public SingleBlockInteraction() {
+    public BlockInteraction() {
     }
 
-    public SingleBlockInteraction(long time, UUID entity, String level, String blockOld, String blockNew, int x, int y, int z) {
+    public BlockInteraction(long time, Entity entityId, String level, String blockOld, String blockNew, int x, int y, int z) {
         this.time = time;
-        this.entity = entity;
+        setEntity(entityId);
         this.level = level;
         this.block = new OldNewTuple(blockOld, blockNew);
         this.x = x;
@@ -35,12 +38,20 @@ public class SingleBlockInteraction implements Interaction {
         this.time = time;
     }
 
-    public UUID getEntity() {
-        return entity;
+    public UUID getEntityID() {
+        return entityId;
     }
 
-    public void setEntity(UUID entity) {
-        this.entity = entity;
+    public void setEntity(Entity entity) {
+        if (entity == null) {
+            return;
+        }
+        this.entityId = entity.getUUID();
+        this.entityName = entity instanceof Player ? entity.getName().getString() : "Mob." + entity.getName().getString();
+    }
+
+    public String getEntityName() {
+        return entityName;
     }
 
     public int getX() {

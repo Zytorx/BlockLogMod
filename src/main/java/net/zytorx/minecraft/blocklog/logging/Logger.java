@@ -10,8 +10,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.zytorx.minecraft.blocklog.BlockLog;
 import net.zytorx.minecraft.blocklog.cache.Cache;
 import net.zytorx.minecraft.blocklog.cache.model.InteractionUtils;
-import net.zytorx.minecraft.blocklog.cache.model.blocks.MultiBlockInteraction;
-import net.zytorx.minecraft.blocklog.cache.model.blocks.SingleBlockInteraction;
+import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
 import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
 
@@ -39,19 +38,20 @@ public class Logger {
         }
 
         var interaction = defaultBlockInteraction(event);
-        interaction.setEntity(event.getPlayer().getUUID());
+        interaction.setEntity(event.getPlayer());
         interaction.setBlock(new OldNewTuple(InteractionUtils.writeBlockState(event.getState()), null));
         log(interaction);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void placeBlock(BlockEvent.EntityPlaceEvent event) {
-        if (event.getPlacedAgainst().equals(event.getPlacedBlock()) || event.getPlacedBlock().isAir()) {
+        var oldState = event.getBlockSnapshot().getReplacedBlock();
+        if (event.getPlacedBlock().equals(oldState) || event.getPlacedBlock().isAir()) {
             return;
         }
         var interaction = defaultBlockInteraction(event);
-        interaction.setEntity(event.getEntity().getUUID());
-        interaction.setBlock(new OldNewTuple(InteractionUtils.writeBlockState(event.getPlacedAgainst()), InteractionUtils.writeBlockState(event.getPlacedBlock())));
+        interaction.setEntity(event.getEntity());
+        interaction.setBlock(new OldNewTuple(InteractionUtils.writeBlockState(oldState), InteractionUtils.writeBlockState(event.getPlacedBlock())));
         log(interaction);
     }
 
@@ -63,7 +63,7 @@ public class Logger {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void trampleFarmland(BlockEvent.FarmlandTrampleEvent event) {
         var interaction = defaultBlockInteraction(event);
-        interaction.setEntity(event.getEntity().getUUID());
+        interaction.setEntity(event.getEntity());
         interaction.setBlock(new OldNewTuple(InteractionUtils.writeBlockState(Blocks.FARMLAND.defaultBlockState()), InteractionUtils.writeBlockState(Blocks.DIRT.defaultBlockState())));
         log(interaction);
     }
@@ -74,7 +74,7 @@ public class Logger {
             return;
         }
         var interaction = defaultBlockInteraction(event);
-        interaction.setEntity(event.getPlayer().getUUID());
+        interaction.setEntity(event.getPlayer());
         interaction.setBlock(new OldNewTuple(InteractionUtils.writeBlockState(event.getState()), InteractionUtils.writeBlockState(event.getFinalState())));
         log(interaction);
     }
@@ -83,28 +83,30 @@ public class Logger {
     public static void explosion(ExplosionEvent event) {
         var explosion = event.getExplosion();
         var toBlow = explosion.getToBlow();
-        if (toBlow.isEmpty()) {
-            return;
-        }
         var time = System.currentTimeMillis();
-        var entity = explosion.getSourceMob().getUUID();
+        var entity = explosion.getSourceMob();
         var level = event.getWorld();
-        var interaction = new MultiBlockInteraction(time, entity, level.dimension().toString());
+        var levelString = level.dimension().toString();
+
         for (var pos : toBlow) {
-            interaction.addBlock(pos, InteractionUtils.writeBlockState(level.getBlockState(pos)), null);
+            var state = level.getBlockState(pos);
+            if (state.isAir()) {
+                continue;
+            }
+            var block = InteractionUtils.writeBlockState(state);
+            log(new BlockInteraction(time, entity, levelString, block, null, pos.getX(), pos.getY(), pos.getZ()));
         }
-        log(interaction);
     }
 
-    public static Stream<Interaction> getAllInteractions() {
+    public static Stream<? extends Interaction> getAllInteractions() {
         return cache.getInteractions();
     }
 
-    private static SingleBlockInteraction defaultBlockInteraction(BlockEvent event) {
+    private static BlockInteraction defaultBlockInteraction(BlockEvent event) {
         var time = System.currentTimeMillis();
         var level = ((Level) event.getWorld()).dimension().toString();
         var pos = event.getPos();
-        return new SingleBlockInteraction(time, null, level, null, null, pos.getX(), pos.getY(), pos.getZ());
+        return new BlockInteraction(time, null, level, null, null, pos.getX(), pos.getY(), pos.getZ());
     }
 
     private static void log(Interaction interaction) {

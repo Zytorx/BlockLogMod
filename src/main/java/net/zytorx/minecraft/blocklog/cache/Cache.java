@@ -8,7 +8,8 @@ public interface Cache {
 
     void addInteraction(Interaction interaction);
 
-    Stream<Interaction> getInteractions();
+
+    Stream<? extends Interaction> getInteractions();
 
     void markDirty();
 
