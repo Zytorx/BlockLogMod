@@ -10,7 +10,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.NetworkConstants;
 import net.zytorx.minecraft.blocklog.cache.Cache;
 import net.zytorx.minecraft.blocklog.cache.LocalFileSystemCache;
-import net.zytorx.minecraft.blocklog.commands.CommandRegistrar;
 
 import java.nio.file.Path;
 
@@ -23,13 +22,12 @@ public class BlockLog {
         ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
         DistExecutor.unsafeRunWhenOn(Dist.DEDICATED_SERVER, () -> () -> {
 
-                    CACHE = new LocalFileSystemCache(Path.of("/home/zytorx/testing/local"));
-
-                    MinecraftForge.EVENT_BUS.addListener(CommandRegistrar::register);
+                    CACHE = new LocalFileSystemCache(Path.of("blocklog/local"));
                     MinecraftForge.EVENT_BUS.addListener(this::onShutdown);
+                    //ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,);
+
                 }
         );
-        //ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,);
     }
 
     private void onShutdown(ServerStoppedEvent event) {

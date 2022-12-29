@@ -1,4 +1,4 @@
-package net.zytorx.minecraft.blocklog.commands;
+package net.zytorx.minecraft.blocklog.logging;
 
 import net.minecraftforge.common.UsernameCache;
 import net.zytorx.minecraft.blocklog.BlockLog;
@@ -6,25 +6,40 @@ import net.zytorx.minecraft.blocklog.cache.model.InteractionUtils;
 import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
 import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
-import net.zytorx.minecraft.blocklog.commands.filter.Filter;
+import net.zytorx.minecraft.blocklog.logging.filter.Filter;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-public class CommandsCache {
+public class GlobalLogCache {
 
     private static final SimpleDateFormat format = new SimpleDateFormat("dd.MM.yy-hh:mm:ss");
+    private static final HashMap<UUID, Boolean> inspectMode = new HashMap<>();
     private static HashMap<Filter, Map<Integer, List<String>>> blockLogCache = new HashMap<>();
     private static HashMap<Filter, Integer> blockLogCounter = new HashMap<>();
+
+    public static boolean isInspector(UUID id) {
+        return inspectMode.containsKey(id) && inspectMode.get(id);
+    }
+
+    public static boolean changeInspector(UUID id) {
+        var changed = !isInspector(id);
+        inspectMode.put(id, changed);
+        return changed;
+    }
+
+    public static void removeInspector(UUID id) {
+        inspectMode.remove(id);
+    }
 
     public static List<String> loadBlockLogCache(Filter filter, int page) {
         if (!blockLogCache.containsKey(filter)) {
             var toAdd = new ArrayList<String>();
             var interactions = BlockLog.CACHE != null ? BlockLog.CACHE.getInteractions() : Stream.<Interaction>empty();
-            var filtered = filter.filter(interactions);
-            var sorted = filtered.sorted(CommandsCache::compare);
+            var filtered = filter == null ? interactions : filter.filter(interactions);
+            var sorted = filtered.sorted(GlobalLogCache::compare);
             sorted.forEach(interaction -> interactionToString(interaction, toAdd));
             var pageMap = new HashMap<Integer, List<String>>();
             var pageLines = 10;
@@ -84,7 +99,7 @@ public class CommandsCache {
         return id1.length() == id2.length() ? -id1.compareTo(id2) : id2.length() - id1.length();
     }
 
-    static void clearCache() {
+    public static void clearCache() {
         blockLogCounter = new HashMap<>();
         blockLogCache = new HashMap<>();
     }

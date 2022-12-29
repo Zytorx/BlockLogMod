@@ -1,4 +1,4 @@
-package net.zytorx.minecraft.blocklog.commands.filter;
+package net.zytorx.minecraft.blocklog.logging.filter;
 
 import net.minecraft.core.BlockPos;
 import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
@@ -33,8 +33,8 @@ public class Filter {
         return x != Integer.MIN_VALUE && y != Integer.MIN_VALUE && z != Integer.MIN_VALUE;
     }
 
-    void setPos(BlockPos pos) {
-        if (hasRadius() && !hasPos()) {
+    public void setPos(BlockPos pos) {
+        if (!hasPos()) {
             this.x = pos.getX();
             this.y = pos.getY();
             this.z = pos.getZ();
@@ -82,5 +82,9 @@ public class Filter {
     @Override
     public int hashCode() {
         return Objects.hash(x, y, z, radius, entity, player);
+    }
+
+    public static Filter blank() {
+        return new Filter(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE, 0, null, null);
     }
 }

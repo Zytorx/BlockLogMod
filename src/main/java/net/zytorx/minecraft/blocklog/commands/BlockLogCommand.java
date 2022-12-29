@@ -11,8 +11,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.zytorx.minecraft.blocklog.BlockLog;
 import net.zytorx.minecraft.blocklog.cache.model.InteractionUtils;
 import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
-import net.zytorx.minecraft.blocklog.commands.filter.Filter;
-import net.zytorx.minecraft.blocklog.commands.filter.FilterArgumentType;
+import net.zytorx.minecraft.blocklog.logging.GlobalLogCache;
+import net.zytorx.minecraft.blocklog.logging.filter.Filter;
+import net.zytorx.minecraft.blocklog.logging.filter.FilterArgumentType;
 
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -24,16 +25,19 @@ public class BlockLogCommand {
     public BlockLogCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(literal("blocklog")
                 .requires(r -> r.hasPermission(4) && r.getEntity() instanceof ServerPlayer)
+                .then(literal("inspect").executes(BlockLogCommand::inspect))
                 .then(literal("list").executes(BlockLogCommand::list)
                         .then(argument("page", IntegerArgumentType.integer(0)).executes(BlockLogCommand::list))
                         .then(argument("filter", new FilterArgumentType()).executes(BlockLogCommand::list)
                                 .then(argument("page", IntegerArgumentType.integer(0)).executes(BlockLogCommand::list))))
-                .then(literal("reload").executes(context -> {
-                    CommandsCache.clearCache();
-                    context.getSource().sendSuccess(new TextComponent("Sucessfully reloaded"), false);
-                    return 0;
-                }))
+                .then(literal("reload").executes(BlockLogCommand::reload))
                 .then(literal("revert").then(argument("id", StringArgumentType.word()).executes(BlockLogCommand::revert))));
+    }
+
+    private static int inspect(CommandContext<CommandSourceStack> context) {
+        var mode = GlobalLogCache.changeInspector(context.getSource().getEntity().getUUID());
+        context.getSource().sendSuccess(new TextComponent("Inspection is now " + (mode ? "enabled" : "disabled")), false);
+        return 0;
     }
 
     private static int list(CommandContext<CommandSourceStack> context) {
@@ -41,7 +45,7 @@ public class BlockLogCommand {
         var page = getIntOrDefault(context, "page");
         var source = context.getSource();
 
-        var log = CommandsCache.loadBlockLogCache(filter, page);
+        var log = GlobalLogCache.loadBlockLogCache(filter, page);
         for (var text : log) {
             source.sendSuccess(new TextComponent(text), false);
         }
@@ -80,6 +84,12 @@ public class BlockLogCommand {
         var state = InteractionUtils.readBlockState(interaction.getBlock().getOldState());
         level.setBlockAndUpdate(pos, state);
 
+        return 0;
+    }
+
+    private static int reload(CommandContext<CommandSourceStack> context) {
+        GlobalLogCache.clearCache();
+        context.getSource().sendSuccess(new TextComponent("Sucessfully reloaded"), false);
         return 0;
     }
 
