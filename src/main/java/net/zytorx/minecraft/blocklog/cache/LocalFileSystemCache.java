@@ -6,21 +6,21 @@ import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Stream;
 
 public class LocalFileSystemCache implements Cache {
 
-    private final AutoFileReadList<BlockInteraction> blockInteractions;
+    private final AutoFileReadMap<BlockInteraction> blockInteractions;
     private final Path path;
     private final Timer timer = new Timer(true);
     private boolean isDirty = false;
 
     public LocalFileSystemCache(Path path) {
         this.path = path;
-        blockInteractions = new AutoFileReadList<BlockInteraction>().load("_bl_blocks");
+        blockInteractions = new AutoFileReadMap<BlockInteraction>().load(path, "_bl_blocks");
     }
 
     public void addInteraction(Interaction interaction) {
@@ -35,9 +35,17 @@ public class LocalFileSystemCache implements Cache {
         markDirty();
     }
 
+    public Interaction removeInteraction(String id) {
+        if (blockInteractions.containsKey(id)) {
+            markDirty();
+            return blockInteractions.remove(id);
+        }
+        return null;
+    }
+
     @Override
     public Stream<? extends Interaction> getInteractions() {
-        return blockInteractions.stream();
+        return blockInteractions.values().stream();
     }
 
     public void markDirty() {
@@ -53,6 +61,10 @@ public class LocalFileSystemCache implements Cache {
         }, 1000 * 60 * 10);
     }
 
+    public String createUniqueBlockId() {
+        return "b" + blockInteractions.getCounterAndCount();
+    }
+
     public void save() {
         if (!isDirty) return;
         path.toFile().getParentFile().mkdirs();
@@ -62,33 +74,44 @@ public class LocalFileSystemCache implements Cache {
         isDirty = false;
     }
 
-    private class AutoFileReadList<VALUE extends Interaction> extends ArrayList<VALUE> {
+    private static class AutoFileReadMap<VALUE extends Interaction> extends HashMap<String, VALUE> {
 
-        private Path path = null;
-        private boolean isDirty = false;
+        private transient Path path = null;
+        private transient boolean isDirty = false;
 
-        public AutoFileReadList() {
+        private long counter = 0;
+
+        public AutoFileReadMap() {
             super();
         }
 
-        private AutoFileReadList(ArrayList<VALUE> readObject, Path path) {
-            super(readObject);
-            this.path = path;
+        public VALUE add(VALUE value) {
+            isDirty = true;
+            return super.put(value.getId(), value);
+        }
+
+        public VALUE remove(VALUE value) {
+            return remove(value.getId());
         }
 
         @Override
-        public boolean add(VALUE value) {
+        public VALUE remove(Object key) {
             isDirty = true;
-            return super.add(value);
+            return super.remove(key);
         }
 
-        public AutoFileReadList<VALUE> load(String suffix) {
-            path = Path.of(LocalFileSystemCache.this.path.toAbsolutePath() + suffix);
+        public long getCounterAndCount() {
+            return counter++;
+        }
 
-            AutoFileReadList<VALUE> temp = null;
+        public AutoFileReadMap<VALUE> load(Path path, String suffix) {
+            this.path = Path.of(path.toAbsolutePath() + suffix);
+
+            AutoFileReadMap<VALUE> temp = null;
             try {
-                var reader = new ObjectInputStream(new BufferedInputStream(new FileInputStream(path.toFile())));
-                temp = new AutoFileReadList<>((ArrayList<VALUE>) reader.readObject(), this.path);
+                var reader = new ObjectInputStream(new BufferedInputStream(new FileInputStream(this.path.toFile())));
+                temp = (AutoFileReadMap<VALUE>) reader.readObject();
+                temp.path = this.path;
                 reader.close();
             } catch (Exception e) {
                 if (temp == null) {
@@ -106,7 +129,7 @@ public class LocalFileSystemCache implements Cache {
                 var writer = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(path.toFile())));
                 writer.reset();
                 synchronized (this) {
-                    writer.writeObject(new ArrayList<>(this));
+                    writer.writeObject(this);
                 }
                 writer.close();
 

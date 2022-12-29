@@ -8,6 +8,7 @@ import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
 import java.util.UUID;
 
 public class BlockInteraction implements Interaction {
+    private String id;
     private long time;
     private UUID entityId;
     private String entityName;
@@ -20,7 +21,8 @@ public class BlockInteraction implements Interaction {
     public BlockInteraction() {
     }
 
-    public BlockInteraction(long time, Entity entityId, String level, String blockOld, String blockNew, int x, int y, int z) {
+    public BlockInteraction(String id, long time, Entity entityId, String level, String blockOld, String blockNew, int x, int y, int z) {
+        this.id = id;
         this.time = time;
         setEntity(entityId);
         this.level = level;
@@ -28,6 +30,11 @@ public class BlockInteraction implements Interaction {
         this.x = x;
         this.y = y;
         this.z = z;
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
 
     public long getTime() {

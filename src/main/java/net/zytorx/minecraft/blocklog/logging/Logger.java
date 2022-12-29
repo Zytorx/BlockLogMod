@@ -2,33 +2,22 @@ package net.zytorx.minecraft.blocklog.logging;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.event.world.ExplosionEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.zytorx.minecraft.blocklog.BlockLog;
-import net.zytorx.minecraft.blocklog.cache.Cache;
 import net.zytorx.minecraft.blocklog.cache.model.InteractionUtils;
 import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
 import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
 
-import java.util.stream.Stream;
-
-@Mod.EventBusSubscriber(modid = BlockLog.MOD_ID)
+@Mod.EventBusSubscriber(modid = BlockLog.MOD_ID, value = Dist.DEDICATED_SERVER)
 public class Logger {
-    private static Cache cache = null;
 
     private Logger() {
-    }
-
-    public static void register(Cache cache) {
-        if (Logger.cache != null) {
-            throw new RuntimeException("Should only be called once");
-        }
-
-        Logger.cache = cache;
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -86,32 +75,30 @@ public class Logger {
         var time = System.currentTimeMillis();
         var entity = explosion.getSourceMob();
         var level = event.getWorld();
-        var levelString = level.dimension().toString();
+        var levelString = level.dimension().location().toString();
 
         for (var pos : toBlow) {
             var state = level.getBlockState(pos);
             if (state.isAir()) {
                 continue;
             }
+            var id = BlockLog.CACHE == null ? null : BlockLog.CACHE.createUniqueBlockId();
             var block = InteractionUtils.writeBlockState(state);
-            log(new BlockInteraction(time, entity, levelString, block, null, pos.getX(), pos.getY(), pos.getZ()));
+            log(new BlockInteraction(id, time, entity, levelString, block, null, pos.getX(), pos.getY(), pos.getZ()));
         }
     }
 
-    public static Stream<? extends Interaction> getAllInteractions() {
-        return cache.getInteractions();
-    }
-
     private static BlockInteraction defaultBlockInteraction(BlockEvent event) {
+        var id = BlockLog.CACHE == null ? null : BlockLog.CACHE.createUniqueBlockId();
         var time = System.currentTimeMillis();
-        var level = ((Level) event.getWorld()).dimension().toString();
+        var level = ((Level) event.getWorld()).dimension().location().toString();
         var pos = event.getPos();
-        return new BlockInteraction(time, null, level, null, null, pos.getX(), pos.getY(), pos.getZ());
+        return new BlockInteraction(id, time, null, level, null, null, pos.getX(), pos.getY(), pos.getZ());
     }
 
     private static void log(Interaction interaction) {
-        if (cache != null) {
-            cache.addInteraction(interaction);
+        if (BlockLog.CACHE != null) {
+            BlockLog.CACHE.addInteraction(interaction);
         }
     }
 }

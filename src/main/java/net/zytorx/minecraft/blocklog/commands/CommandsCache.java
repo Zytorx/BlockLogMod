@@ -1,15 +1,16 @@
 package net.zytorx.minecraft.blocklog.commands;
 
 import net.minecraftforge.common.UsernameCache;
+import net.zytorx.minecraft.blocklog.BlockLog;
 import net.zytorx.minecraft.blocklog.cache.model.InteractionUtils;
 import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
 import net.zytorx.minecraft.blocklog.cache.model.common.Interaction;
 import net.zytorx.minecraft.blocklog.cache.model.common.OldNewTuple;
-import net.zytorx.minecraft.blocklog.logging.Logger;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 public class CommandsCache {
 
@@ -21,7 +22,7 @@ public class CommandsCache {
         var loadedFilter = loadName(null, filter);
         if (!blockLogCache.containsKey(loadedFilter)) {
             var toAdd = new ArrayList<String>();
-            var interactions = Logger.getAllInteractions();
+            var interactions = BlockLog.CACHE != null ? BlockLog.CACHE.getInteractions() : Stream.<Interaction>empty();
             var filtered = interactions.filter(interaction -> loadedFilter == null || interaction.getEntityID().toString().equals(loadedFilter) || interaction.getEntityName().equals(loadedFilter));
             var sorted = filtered.sorted(CommandsCache::compare);
             sorted.forEach(interaction -> interactionToString(interaction, toAdd));
@@ -44,7 +45,8 @@ public class CommandsCache {
     private static void interactionToString(Interaction toConvert, List<String> strings) {
         var time = format.format(new Date(toConvert.getTime()));
         var entity = loadName(toConvert.getEntityID(), toConvert.getEntityName());
-        var template = time + ": " + entity + " {action} at ({x}, {y}, {z})";
+        var id = toConvert.getId();
+        var template = "§bid§f: §3" + id + " §f: §b" + time + "§f: §3" + entity + " {action} §b(§a{x}§b, §a{y}§b, §a{z}§b)";
         if (toConvert instanceof BlockInteraction singleBlock) {
             strings.add(convert(template, singleBlock.getBlock(), singleBlock.getX(), singleBlock.getY(), singleBlock.getZ()));
         }
@@ -54,11 +56,11 @@ public class CommandsCache {
         var oldState = InteractionUtils.readBlockState(tuple.getOldState());
         var newState = InteractionUtils.readBlockState(tuple.getNewState());
         if (newState.isAir()) {
-            template = template.replace("{action}", "broke {old}");
+            template = template.replace("{action}", "§cbroke §3{old}");
         } else if (oldState.isAir()) {
-            template = template.replace("{action}", "placed {new}");
+            template = template.replace("{action}", "§cplaced §3{new}");
         } else {
-            template = template.replace("{action}", "replaced {old} with {new}");
+            template = template.replace("{action}", "§creplaced §3{old} §cwith §3{new}");
         }
         var oldItem = oldState.getBlock().asItem();
         var newItem = newState.getBlock().asItem();
@@ -77,14 +79,9 @@ public class CommandsCache {
     }
 
     private static int compare(Interaction i1, Interaction i2) {
-        var temp = i1.getTime() - i2.getTime();
-        if (temp < 0) {
-            return 1;
-        }
-        if (temp > 0) {
-            return -1;
-        }
-        return 0;
+        var id1 = i1.getId();
+        var id2 = i2.getId();
+        return id1.length() == id2.length() ? -id1.compareTo(id2) : id2.length() - id1.length();
     }
 
     static void clearCache() {

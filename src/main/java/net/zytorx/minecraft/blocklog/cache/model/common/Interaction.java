@@ -7,6 +7,8 @@ import java.util.UUID;
 
 public interface Interaction extends Serializable {
 
+    String getId();
+
     long getTime();
 
     void setEntity(Entity entityId);

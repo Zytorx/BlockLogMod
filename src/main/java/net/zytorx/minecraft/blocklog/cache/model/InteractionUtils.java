@@ -1,9 +1,14 @@
 package net.zytorx.minecraft.blocklog.cache.model;
 
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.zytorx.minecraft.blocklog.cache.model.blocks.BlockInteraction;
 
 public class InteractionUtils {
     private InteractionUtils() {
@@ -22,5 +27,9 @@ public class InteractionUtils {
         } catch (Exception e) {
             return Blocks.AIR.defaultBlockState();
         }
+    }
+
+    public static ResourceKey<Level> getDimensionKey(BlockInteraction interaction) {
+        return ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(interaction.getLevel()));
     }
 }

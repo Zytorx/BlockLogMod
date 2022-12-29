@@ -8,6 +8,9 @@ public interface Cache {
 
     void addInteraction(Interaction interaction);
 
+    Interaction removeInteraction(String id);
+
+    String createUniqueBlockId();
 
     Stream<? extends Interaction> getInteractions();
 
